@@ -1,0 +1,209 @@
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  background: linear-gradient(180deg, #64BEFF -50%, #6e96ff 69.71%, #2a65ff 150%);
+  font-family: 'Source Sans Pro', sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.game-container {
+  position: relative;
+  width: 1920px;
+  height: 1065px;
+
+  background-color: #000;
+  background: url(assets/images/map11.png) no-repeat center;
+  background-size: 1664px 896px;
+  image-rendering: pixelated;
+}
+
+.player-info {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 1em;
+  display: flex;
+  gap: 0.5em;
+  align-items: flex-end;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+}
+
+input[type="text"],
+button {
+  font-family: inherit;
+  font-weight: bold;
+  font-size: 18px;
+  height: 44px;
+  border-radius: 4px;
+  outline: 0;
+}
+
+input[type="text"] {
+  padding-left: 0.5em;
+  border: 3px solid #222034;
+  width: 150px;
+  text-transform: uppercase;
+
+  &:focus {
+    border-color: #f000ff;
+  }
+}
+
+button {
+  padding-left: 0.5em;
+  padding-right: 0.5em;
+  background: #59ff5a;
+  border: 0;
+  border-bottom: 2px solid #1e830b;
+  cursor: pointer;
+
+  &:active {
+    position: relative;
+    top: 1px;
+  }
+}
+
+// Characters
+.grid-cell {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+}
+
+.Character {
+  transition: transform 0.4s;
+  position: absolute;
+  width: 16px;
+  height: 16px;
+
+  &.you {
+    z-index: 1;
+
+    .Character_you-arrow {
+      display: block;
+    }
+  }
+
+  &[data-direction="right"] {
+    .Character_sprite {
+      background-position-x: 16px;
+    }
+  }
+
+  &[data-color="red"] {
+    .Character_sprite {
+      background-position-y: -16px;
+    }
+  }
+
+  &[data-color="orange"] {
+    .Character_sprite {
+      background-position-y: -32px;
+    }
+  }
+
+  &[data-color="yellow"] {
+    .Character_sprite {
+      background-position-y: -48px;
+    }
+  }
+
+  &[data-color="green"] {
+    .Character_sprite {
+      background-position-y: -64px;
+    }
+  }
+
+  &[data-color="purple"] {
+    .Character_sprite {
+      background-position-y: -80px;
+    }
+  }
+}
+
+.Character_you-arrow {
+  display: none;
+  position: absolute;
+  top: -18px;
+  left: 5px;
+  width: 16px;
+  height: 16px;
+  background: url(assets/images/arrow.png) no-repeat no-repeat;
+}
+
+.Character_sprite {
+  overflow: hidden;
+  top: -3px;
+  background: url(assets/images/characters.png);
+  width: 16px;
+  height: 16px;
+}
+
+.Character_shadow {
+  width: 16px;
+  height: 16px;
+  background: url(assets/images/shadow.png) no-repeat no-repeat;
+}
+
+.Character_name-container {
+  position: absolute;
+  top: -12px;
+  left: -5px;
+  font-size: 15px;
+  padding: 1px 2px 1px;
+  border-radius: 3px;
+  background: #333;
+  color: white;
+  font-weight: bold;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.Character_coins {
+  margin-left: 1px;
+  color: gold;
+}
+
+@keyframes coinFloat {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(5px);
+  }
+}
+
+.Coin {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  z-index: 5;
+}
+
+.Coin_shadow {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: url('assets/images/coin-shadow.png') no-repeat center;
+}
+
+.Coin_sprite {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: url('assets/images/coin.png') no-repeat center;
+}

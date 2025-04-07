@@ -1,0 +1,36 @@
+<div class="game-container" #gameContainer>
+  <div
+    *ngFor="let entry of players | keyvalue"
+    class="Character"
+    [attr.data-color]="entry.value.color"
+    [attr.data-direction]="entry.value.direction"
+    [ngStyle]="{ transform: getPlayerTransform(entry.value) }"
+  >
+    <div class="Character_shadow"></div>
+    <div class="Character_sprite"></div>
+    <div class="Character_name-container">
+      <span class="Character_name">{{ entry.value.name }}</span>
+      <span class="Character_coins">{{ entry.value.coins }}</span>
+    </div>
+    <div class="Character_you-arrow" *ngIf="entry.value.id === playerId"></div>
+  </div>
+
+  <div
+    *ngFor="let coinEntry of coins | keyvalue"
+    class="Coin"
+    [ngStyle]="{ transform: getCoinTransform(coinEntry.value) }"
+  >
+    <div class="Coin_shadow"></div>
+    <div class="Coin_sprite"></div>
+  </div>
+</div>
+
+<div class="player-info">
+  <div>
+    <label for="player-name">Your Name</label>
+    <input id="player-name" maxlength="10" type="text" [(ngModel)]="playerName" (change)="updateName()" />
+  </div>
+  <div>
+    <button (click)="changeColor()">Change Color</button>
+  </div>
+</div>
