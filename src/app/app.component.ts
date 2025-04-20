@@ -31,6 +31,9 @@ export class AppComponent implements OnInit {
   // lista de culori pentru jucatori
   playerColors: string[] = ['blue', 'red', 'orange', 'yellow', 'green', 'purple'];
 
+  private pressedKeys = new Set<string>();
+  private readonly BASE_STEP = 3;
+
   // dimensiunile containerului (rezolutia ecranului)
   containerWidth: number = 1920;
   containerHeight: number = 1065;
@@ -40,19 +43,35 @@ export class AppComponent implements OnInit {
   mapImageHeight: number = 600;
 
   // offset pentru a centra harta in container:
-  mapOffsetX: number;
-  mapOffsetY: number;
+  mapOffsetX = 0;
+  mapOffsetY = 0;
 
   // dimensiunea sprite-ului jucator
   playerSpriteWidth: number = 32;
   playerSpriteHeight: number = 48;
 
+  zoom = 6;
+
+  viewportWidth = window.innerWidth;
+  viewportHeight = window.innerHeight;
+
+  worldOffsetX = -420;
+  worldOffsetY = -400;
+
+  isWalking = false;
+
   @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef;
 
   constructor(private db: AngularFireDatabase, private auth: AngularFireAuth) {
     // calculăm offset-ul pentru centrare:
-    this.mapOffsetX = (this.containerWidth - this.mapImageWidth) / 2; // 128 px
-    this.mapOffsetY = (this.containerHeight - this.mapImageHeight) / 2; // aproximativ 84 px
+    const maxOffsetX = 0;
+    const minOffsetX = this.viewportWidth - this.mapImageWidth * this.zoom;
+
+    const maxOffsetY = 0;
+    const minOffsetY = this.viewportHeight - this.mapImageHeight * this.zoom;
+
+    this.worldOffsetX = Math.max(minOffsetX, Math.min(maxOffsetX, this.worldOffsetX));
+    this.worldOffsetY = Math.max(minOffsetY, Math.min(maxOffsetY, this.worldOffsetY));
   }
 
   ngOnInit(): void {
@@ -62,7 +81,8 @@ export class AppComponent implements OnInit {
         if (user) {
           this.playerId = user.uid;
           // alegem o pozitie sigura in interiorul hartii (in pixeli, folosind offset si limitele hartii)
-          const { x, y } = this.getRandomSafeSpot();
+          const x = 152;
+          const y = 169;
           this.playerName = this.createName();
 
           const initialPlayer: Player = {
@@ -88,23 +108,64 @@ export class AppComponent implements OnInit {
     });
   }
 
+  private centerCameraOn(x: number, y: number) {
+    // calculează offset‑ul
+    this.worldOffsetX = this.viewportWidth / 2 - (x + this.playerSpriteWidth / 2) * this.zoom;
+    this.worldOffsetY = this.viewportHeight / 2 - (y + this.playerSpriteHeight / 2) * this.zoom;
+    this.constrainWorld();
+  }
+
+  private constrainWorld() {
+    const minX = this.viewportWidth - this.mapImageWidth * this.zoom;
+    const minY = this.viewportHeight - this.mapImageHeight * this.zoom;
+    this.worldOffsetX = Math.max(minX, Math.min(0, this.worldOffsetX));
+    this.worldOffsetY = Math.max(minY, Math.min(0, this.worldOffsetY));
+  }
+
   // listener pentru event-uri de la tastatura
   @HostListener('window:keydown', ['$event'])
-  handleKeyDown(event: KeyboardEvent) {
-    switch (event.code) {
-      case 'ArrowUp':
-        this.handleArrowPress(0, -10);
-        break;
-      case 'ArrowDown':
-        this.handleArrowPress(0, 10);
-        break;
-      case 'ArrowLeft':
-        this.handleArrowPress(-10, 0);
-        break;
-      case 'ArrowRight':
-        this.handleArrowPress(10, 0);
-        break;
+  onKeyDown(event: KeyboardEvent) {
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.code)) {
+      this.pressedKeys.add(event.code);
+      this.processMovement();
+      event.preventDefault();
     }
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  onKeyUp(event: KeyboardEvent) {
+    this.pressedKeys.delete(event.code);
+  }
+
+  private processMovement(): void {
+    let dx = 0;
+    let dy = 0;
+
+    const step = this.BASE_STEP;
+
+    if (this.pressedKeys.has('ArrowUp'))    dy -= step;
+    if (this.pressedKeys.has('ArrowDown'))  dy += step;
+    if (this.pressedKeys.has('ArrowLeft'))  dx -= step;
+    if (this.pressedKeys.has('ArrowRight')) dx += step;
+
+    if (dx === 0 && dy === 0) return;
+
+    if (dx !== 0 && dy !== 0) {
+      dx = Math.round(dx / Math.SQRT2);
+      dy = Math.round(dy / Math.SQRT2);
+    }
+
+    this.handleArrowPress(dx, dy);
+
+    const isMoving = dx !== 0 || dy !== 0;
+    if (isMoving) this.isWalking = true;
+    else this.isWalking = false;
+  }
+
+  @HostListener('window:resize')
+  onResize() {
+    this.viewportWidth = window.innerWidth;
+    this.viewportHeight = window.innerHeight;
   }
 
   // actualizeaza numele jucatorului in Firebase cand inputul de nume se schimba
@@ -144,13 +205,20 @@ export class AppComponent implements OnInit {
     newY = Math.max(topBoundary, Math.min(bottomBoundary, newY));
 
     // actualizam directia jucatorului în functie de miscare
-    if (xChange > 0) {
-      currentPlayer.direction = 'right';
-    } else if (xChange < 0) {
-      currentPlayer.direction = 'left';
-    }
+
+    if (xChange > 0 && yChange < 0) currentPlayer.direction = 'up-right';
+    else if (xChange > 0 && yChange > 0) currentPlayer.direction = 'down-right';
+    else if (xChange < 0 && yChange < 0) currentPlayer.direction = 'up-left';
+    else if (xChange < 0 && yChange > 0) currentPlayer.direction = 'down-left';
+    else if (xChange > 0) currentPlayer.direction = 'right';
+    else if (xChange < 0) currentPlayer.direction = 'left';
+    else if (yChange > 0) currentPlayer.direction = 'down';
+    else if (yChange < 0) currentPlayer.direction = 'up';
+
     currentPlayer.x = newX;
     currentPlayer.y = newY;
+
+    this.centerCameraOn(newX, newY);
 
     this.db.object(`players/${this.playerId}`).set(currentPlayer);
     this.attemptGrabCoin(newX, newY);
@@ -247,5 +315,14 @@ export class AppComponent implements OnInit {
   // calcularea transformarilor SCSS pentru pozitionarea monedelor (in pixeli)
   getCoinTransform(coin: Coin): string {
     return `translate3d(${coin.x}px, ${coin.y}px, 0)`;
+  }
+
+  getWorldStyle() {
+    return {
+      transform: `
+        translate(${this.worldOffsetX}px, ${this.worldOffsetY}px)
+        scale(${this.zoom})
+      `
+    };
   }
 }
