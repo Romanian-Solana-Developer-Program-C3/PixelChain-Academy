@@ -48,7 +48,7 @@ export class AppComponent implements OnInit {
 
   // dimensiunea sprite-ului jucator
   playerSpriteWidth: number = 32;
-  playerSpriteHeight: number = 48;
+  playerSpriteHeight: number = 32;
 
   zoom = 6;
 
@@ -135,6 +135,7 @@ export class AppComponent implements OnInit {
   @HostListener('window:keyup', ['$event'])
   onKeyUp(event: KeyboardEvent) {
     this.pressedKeys.delete(event.code);
+    this.processMovement(); 
   }
 
   private processMovement(): void {
@@ -148,7 +149,9 @@ export class AppComponent implements OnInit {
     if (this.pressedKeys.has('ArrowLeft'))  dx -= step;
     if (this.pressedKeys.has('ArrowRight')) dx += step;
 
-    if (dx === 0 && dy === 0) return;
+    if (dx === 0 && dy === 0) {
+      this.isWalking = false;
+    }
 
     if (dx !== 0 && dy !== 0) {
       dx = Math.round(dx / Math.SQRT2);
@@ -158,7 +161,7 @@ export class AppComponent implements OnInit {
     this.handleArrowPress(dx, dy);
 
     const isMoving = dx !== 0 || dy !== 0;
-    if (isMoving) this.isWalking = true;
+    if (isMoving == true) this.isWalking = true;
     else this.isWalking = false;
   }
 

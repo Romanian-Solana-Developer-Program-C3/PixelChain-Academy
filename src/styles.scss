@@ -59,67 +59,63 @@ body {
 
 .Character {
     position: absolute;
-    width: 32px; // sprite 1:1
-    height: 48px;
-}
-
-.Character_sprite {
-    position: absolute;
     width: 32px;
-    height: 48px;
-    top: 0; // nu -3px
-    overflow: visible; // ca să nu mai fie tăiat
+    height: 32px;
+    z-index: 5;
 }
-
-
-/* direcții – deplasezi background‑position pe axa Y */
-
-.Character[data-direction='down'] .Character_sprite {
-    background-position-y: 0;
-}
-
-.Character[data-direction='left'] .Character_sprite {
-    background-position-y: -48px;
-}
-
-.Character[data-direction='right'] .Character_sprite {
-    background-position-y: -96px;
-}
-
-.Character[data-direction='up'] .Character_sprite {
-    background-position-y: -144px;
-}
-
-
-/* oprirea animației când nu mergi */
-
-.Character:not(.is-walking) .Character_sprite {
-    animation: none;
-    background-position-x: 0;
-}
-
-
-/* shadow */
 
 .Character_shadow {
-    width: 32px;
-    height: 12px;
-    background: url("assets/images/shadow.png") no-repeat center/contain;
     position: absolute;
     bottom: -6px;
-    left: 0;
+    width: 32px;
+    height: 12px;
+    background: url("/assets/images/shadow.png") no-repeat center/contain;
 }
 
 
-/* nume + săgeata „YOU” – păstrezi ce aveai deja */
+/* ---------- sprite, FĂRĂ animaţie implicită ---------- */
+
+.Character_sprite {
+    width: 16px;
+    height: 32px;
+    image-rendering: pixelated;
+    background: url("/assets/images/farmer_down_1.png") no-repeat;
+}
+
+
+/* ---------- rulează numai când merge ---------- */
+
+.Character.is-walking .Character_sprite {
+    animation: walk 0.5s steps(8) infinite;
+}
 
 @keyframes walk {
     from {
         background-position-x: 0;
     }
     to {
-        background-position-x: -96px;
+        background-position-x: -128px;
     }
+    /* 8 cadre × 16 px */
+}
+
+
+/* — direcţii —*/
+
+.Character[data-direction='down'] .Character_sprite {
+    background-image: url("/assets/images/farmer_down_1.png");
+}
+
+.Character[data-direction='up'] .Character_sprite {
+    background-image: url("/assets/images/farmer_up_1.png");
+}
+
+.Character[data-direction='left'] .Character_sprite {
+    background-image: url("/assets/images/farmer_left_1.png");
+}
+
+.Character[data-direction='right'] .Character_sprite {
+    background-image: url("/assets/images/farmer_right_1.png");
 }
 
 // ------- monedă ---------
@@ -194,49 +190,6 @@ button {
     height: 16px;
 }
 
-.Character {
-    transition: transform 0.4s;
-    position: absolute;
-    width: 16px;
-    height: 16px;
-    &.you {
-        z-index: 1;
-        .Character_you-arrow {
-            display: block;
-        }
-    }
-    &[data-direction="right"] {
-        .Character_sprite {
-            background-position-x: 16px;
-        }
-    }
-    &[data-color="red"] {
-        .Character_sprite {
-            background-position-y: -16px;
-        }
-    }
-    &[data-color="orange"] {
-        .Character_sprite {
-            background-position-y: -32px;
-        }
-    }
-    &[data-color="yellow"] {
-        .Character_sprite {
-            background-position-y: -48px;
-        }
-    }
-    &[data-color="green"] {
-        .Character_sprite {
-            background-position-y: -64px;
-        }
-    }
-    &[data-color="purple"] {
-        .Character_sprite {
-            background-position-y: -80px;
-        }
-    }
-}
-
 .Character_you-arrow {
     display: none;
     position: absolute;
@@ -245,20 +198,6 @@ button {
     width: 16px;
     height: 16px;
     background: url(assets/images/arrow.png) no-repeat no-repeat;
-}
-
-.Character_sprite {
-    overflow: hidden;
-    top: -3px;
-    background: url(assets/images/characters.png);
-    width: 16px;
-    height: 16px;
-}
-
-.Character_shadow {
-    width: 16px;
-    height: 16px;
-    background: url(assets/images/shadow.png) no-repeat no-repeat;
 }
 
 .Character_name-container {
