@@ -1,7 +1,12 @@
 import { Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { signInAnonymously } from 'firebase/auth';
-import { Database, ref, set, onValue, onDisconnect, update, remove } from '@angular/fire/database';
-import { Auth }     from '@angular/fire/auth';
+import { ref, set, onValue, onDisconnect, update, remove } from '@angular/fire/database';
+import { Auth } from '@angular/fire/auth';
+import { Database } from '@angular/fire/database';
+import { Firestore } from '@angular/fire/firestore';
+import { AngularFireAuth } from '@angular/fire/compat/auth';
+import { AngularFireDatabase } from '@angular/fire/compat/database';
+import { debounceTime, Subject } from 'rxjs';
 
 interface Player {
   id: string;
@@ -60,10 +65,12 @@ export class AppComponent implements OnInit {
   worldOffsetY = -400;
 
   isWalking = false;
+  movement$ = new Subject<Player>();
 
   @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef;
 
-  constructor(private auth: Auth, private db: Database) {
+  constructor(private auth: AngularFireAuth,
+    private db: AngularFireDatabase) {
     // calculăm offset-ul pentru centrare:
     const maxOffsetX = 0;
     const minOffsetX = this.viewportWidth - this.mapImageWidth * this.zoom;
@@ -73,13 +80,20 @@ export class AppComponent implements OnInit {
 
     this.worldOffsetX = Math.max(minOffsetX, Math.min(maxOffsetX, this.worldOffsetX));
     this.worldOffsetY = Math.max(minOffsetY, Math.min(maxOffsetY, this.worldOffsetY));
+    
+    this.movement$.pipe(debounceTime(100)).subscribe(p => {
+      this.db.object(`players/${this.playerId}`).update({
+        x: p.x,
+        y: p.y,
+        direction: p.direction
+      });
+    });
   }
 
   ngOnInit(): void {
     // autentificare anonima cu Firebase
-    signInAnonymously(this.auth).then(() => {
-      // ascultă authState
-      this.auth.onAuthStateChanged((user) => {
+    this.auth.signInAnonymously().then(() => {
+      this.auth.authState.subscribe((user) => {
         if (user) {
           this.playerId = user.uid;
           // alegem o pozitie sigura in interiorul hartii (in pixeli, folosind offset si limitele hartii)
@@ -97,9 +111,11 @@ export class AppComponent implements OnInit {
             coins: 0,
           };
 
-          const playerRef = ref(this.db, `players/${this.playerId}`);
-          set(playerRef, initialPlayer);
-          onDisconnect(playerRef).remove()
+          // salvam datele initiale in Firebase
+          this.db.object(`players/${this.playerId}`).set(initialPlayer);
+
+          // stergem jucatorul la deconectare
+          this.db.object(`players/${this.playerId}`).query.ref.onDisconnect().remove();
 
           // pornim event listenerii pentru actualizari in timp real
           this.initGameListeners();
@@ -173,9 +189,9 @@ export class AppComponent implements OnInit {
 
   // actualizeaza numele jucatorului in Firebase cand inputul de nume se schimba
   updateName() {
-    const playerRef = ref(this.db, `players/${this.playerId}`);
-    // actualizezi doar câmpul name
-    update(playerRef, { name: this.playerName });
+    this.db.object(`players/${this.playerId}`).update({
+      name: this.playerName,
+    });
   }
 
   // schimba culoarea jucatorului
@@ -222,22 +238,22 @@ export class AppComponent implements OnInit {
     currentPlayer.y = newY;
 
     this.centerCameraOn(newX, newY);
+    this.movement$.next(currentPlayer);
 
-    const playerRef = ref(this.db, `players/${this.playerId}`);
-    set(playerRef, currentPlayer);
+    // this.db.object(`players/${this.playerId}`).set(currentPlayer);
     this.attemptGrabCoin(newX, newY);
   }
 
   // listeneri pentru actualizarile din Firebase
   initGameListeners() {
     // actualizeaza lista jucatorilor
-    onValue(ref(this.db, 'players'), snapshot => {
-      this.players = snapshot.val() || {};
+    this.db.object('players').valueChanges().subscribe((data: any) => {
+      this.players = data || {};
     });
 
     // actualizeaza lista monedelor
-    onValue(ref(this.db, 'coins'), snapshot => {
-      this.coins = snapshot.val() || {};
+    this.db.object('coins').valueChanges().subscribe((data: any) => {
+      this.coins = data || {};
     });
 
     // functia care plaseaza monedele pe harta
@@ -247,25 +263,15 @@ export class AppComponent implements OnInit {
   // preia moneda de la coordonatele (x, y)
   attemptGrabCoin(x: number, y: number) {
     const key = this.getKeyString(x, y);
-
-    // 1) stergi moneda
-    const coinRef = ref(this.db, `coins/${key}`);
-    remove(coinRef)
-      .then(() => {
-        // 2) incrementezi numărul de monede ale jucătorului
-        const currentPlayer = this.players[this.playerId];
-        if (currentPlayer) {
-          const newCoins = (currentPlayer.coins || 0) + 1;
-          const playerRef = ref(this.db, `players/${this.playerId}`);
-          update(playerRef, { coins: newCoins })
-            .then(() => console.log('Monedă luată, coins=', newCoins))
-            .catch(err => console.error('Eroare la update coins:', err));
-        }
-      })
-      .catch(err => {
-        // dacă nu exista moneda, remove() va eșua silențios sau cu eroare
-        console.warn('Nu s‑a putut șterge moneda:', err);
-      });
+    if (this.coins && this.coins[key]) {
+      // stergem moneda din Firebase si incrementeaza contorul de monede
+      this.db.object(`coins/${key}`).remove();
+      const currentPlayer = this.players[this.playerId];
+      if (currentPlayer) {
+        const newCoins = (currentPlayer.coins || 0) + 1;
+        this.db.object(`players/${this.playerId}`).update({ coins: newCoins });
+      }
+    }
   }
 
 
@@ -273,11 +279,7 @@ export class AppComponent implements OnInit {
   placeCoin() {
     const { x, y } = this.getRandomSafeSpot();
     const key = this.getKeyString(x, y);
-    const coinRef = ref(this.db, `coins/${key}`);
-
-    set(coinRef, { x, y })
-      .then(() => console.log(`Monedă plasată la ${key}`))
-      .catch(err => console.error('Eroare la plasare monedă:', err));
+    this.db.object(`coins/${key}`).set({ x, y });
 
     const coinTimeouts = [2000, 3000, 4000, 5000];
     setTimeout(() => this.placeCoin(), this.randomFromArray(coinTimeouts));

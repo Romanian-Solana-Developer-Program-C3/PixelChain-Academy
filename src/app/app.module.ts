@@ -1,32 +1,30 @@
 // src/app/app.module.ts
-import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
-import { initializeApp } from 'firebase/app';
-import { getDatabase } from 'firebase/database';
+import { NgModule }                   from '@angular/core';
+import { BrowserModule }              from '@angular/platform-browser';
+import { FormsModule }                from '@angular/forms';
 
-import { provideFirebaseApp } from '@angular/fire/app';
-import { getAuth, provideAuth } from '@angular/fire/auth';
-import { provideDatabase } from '@angular/fire/database';
+import { AngularFireModule }          from '@angular/fire/compat';
+import { AngularFireAuthModule }      from '@angular/fire/compat/auth';
+import { AngularFireDatabaseModule }  from '@angular/fire/compat/database';
+import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 
-import { environment } from '../environments/environment';
-import { AppRoutingModule } from './app-routing.module';
-import { AppComponent } from './app.component';
+import { environment }                from '../environments/environment';
+import { AppRoutingModule }           from './app-routing.module';
+import { AppComponent }               from './app.component';
 
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
+  declarations: [AppComponent],
   imports: [
     BrowserModule,
     FormsModule,
-    AppRoutingModule
-  ],
-  providers: [
-    provideFirebaseApp(() => initializeApp(environment.firebase)),
-    provideAuth(() => getAuth()),
-    provideDatabase(() => getDatabase()),
+    AppRoutingModule,
+
+    // bootstrap compat
+    AngularFireModule.initializeApp(environment.firebase),
+    AngularFireAuthModule,
+    AngularFireDatabaseModule,
+    AngularFirestoreModule,
   ],
   bootstrap: [AppComponent]
 })
-export class AppModule { }
+export class AppModule {}
