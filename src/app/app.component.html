@@ -20,6 +20,12 @@
                 <div class="Coin_sprite"></div>
             </div>
         </ng-container>
+
+        <!-- <img class="Map" src="assets/images/farm_foreground.png" draggable="false" /> -->
+
+        <ng-container *ngFor="let b of boundaries">
+            <div class="BoundaryDebug" [style.width.px]="b.width" [style.height.px]="b.height" [style.transform]="'translate3d(' + b.x + 'px,' + b.y + 'px,0)'"></div>
+        </ng-container>
     </div>
 </div>
 
