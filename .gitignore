@@ -2,6 +2,8 @@
 
 # env
 /src/environments/firebase.credentials.ts
+# local environment variable files
+*.env
 
 # compiled output
 /dist
@@ -12,6 +14,19 @@
 
 # dependencies
 /node_modules
+/functions/node_modules
+
+# Angular cache
+/.angular/
+
+# dataconnect generated code
+/dataconnect-generated/
+
+# Solana artifacts
+/solana-game-dev/
+
+# Firebase local emulator config
+/.firebase/
 
 # profiling files
 chrome-profiler-events*.json
@@ -38,10 +53,13 @@ chrome-profiler-events*.json
 /connect.lock
 /coverage
 /libpeerconnection.log
-npm-debug.log
-yarn-error.log
 testem.log
 /typings
+
+# log files
+npm-debug.log*
+yarn-error.log*
+yarn-debug.log*
 
 # System Files
 .DS_Store
