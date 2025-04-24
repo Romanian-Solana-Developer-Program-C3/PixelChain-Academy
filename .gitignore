@@ -17,8 +17,8 @@
 /functions/node_modules
 
 # Angular cache
-/angular/cache/16.2.16/babel-webpack
-/angular/cache/16.2.16/angular-webpack
+/.angular/cache/16.2.16/babel-webpack
+/.angular/cache/16.2.16/angular-webpack
 
 # dataconnect generated code
 /dataconnect-generated/
