@@ -17,7 +17,7 @@
 /functions/node_modules
 
 # Angular cache
-/.angular/
+/.angular
 
 # dataconnect generated code
 /dataconnect-generated/
