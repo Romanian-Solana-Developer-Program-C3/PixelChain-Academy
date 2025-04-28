@@ -11,9 +11,11 @@ import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 import { environment }                from '../environments/environment';
 import { AppRoutingModule }           from './app-routing.module';
 import { AppComponent }               from './app.component';
+import { MiniMapComponent } from './components/mini-map/mini-map.component';
+import { InfoModalComponent } from './components/info-modal/info-modal.component';
 
 @NgModule({
-  declarations: [AppComponent],
+  declarations: [AppComponent, MiniMapComponent, InfoModalComponent],
   imports: [
     BrowserModule,
     FormsModule,

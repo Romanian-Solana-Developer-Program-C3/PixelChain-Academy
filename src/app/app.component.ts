@@ -6,10 +6,10 @@ import { Database } from '@angular/fire/database';
 import { Firestore } from '@angular/fire/firestore';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AngularFireDatabase } from '@angular/fire/compat/database';
-import { debounceTime, Subject } from 'rxjs';
+import { debounceTime, empty, Subject } from 'rxjs';
 import { colissions } from '../assets/colissions';
 
-interface Player {
+export interface Player {
   id: string;
   name: string;
   direction: string;
@@ -24,11 +24,15 @@ interface Coin {
   y: number;    // coordonată verticală în pixeli (pe baza hărții)
 }
 
-interface Boundary {
+export interface Boundary {
   x: number;
   y: number;
   width: number;
   height: number;
+}
+
+enum Modals {
+  Information = 1001
 }
 
 @Component({
@@ -54,10 +58,12 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   private readonly TILE_SIZE = 16;
   private readonly COLS = 140;
-private readonly ROWS = 80;
+  private readonly ROWS = 80;
   // dimensiunile imaginii hartii
-  mapImageWidth  = this.COLS * this.TILE_SIZE;   // 140×16 = 2240
+  mapImageWidth = this.COLS * this.TILE_SIZE;   // 140×16 = 2240
   mapImageHeight = this.ROWS * this.TILE_SIZE;   //  80×16 = 1280
+
+  showMiniMap: boolean = false;
 
   // offset pentru a centra harta in container:
   mapOffsetX = 0;
@@ -78,6 +84,13 @@ private readonly ROWS = 80;
   isWalking = false;
   movement$ = new Subject<Player>();
   boundaries: Boundary[] = [];
+  informationPopUpCoordinates: Boundary = {
+    x: 0,
+    y: 0,
+    width: 0,
+    height: 0
+  };
+  isInformationModalOpened = false;
   colissionsMap: [] = [];
 
   @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef;
@@ -120,9 +133,17 @@ private readonly ROWS = 80;
             height: this.TILE_SIZE
           });
         }
+        if (colissions[row * this.COLS + col] === Modals.Information) {
+          this.informationPopUpCoordinates = {
+            x: col * this.TILE_SIZE,
+            y: row * this.TILE_SIZE,
+            width: this.TILE_SIZE,
+            height: this.TILE_SIZE
+          };
+        }
       }
     }
-    
+
     this.auth.signInAnonymously().then(() => {
       this.auth.authState.subscribe((user) => {
         if (user) {
@@ -187,12 +208,24 @@ private readonly ROWS = 80;
       this.pressedKeys.add(event.code);
       event.preventDefault();
     }
+    if (event.key.toLowerCase() === 'm') {
+      this.showMiniMap = !this.showMiniMap;
+      console.log(this.showMiniMap);
+    }
   }
 
   @HostListener('window:keyup', ['$event'])
   onKeyUp(event: KeyboardEvent) {
     this.pressedKeys.delete(event.code);
     this.processMovement();
+  }
+
+  toggleMiniMap(): void {
+    this.showMiniMap = !this.showMiniMap;
+  }
+
+  toggleInfoModal(): void {
+    this.isInformationModalOpened = !this.isInformationModalOpened;
   }
 
   private processMovement(): void {
@@ -212,8 +245,8 @@ private readonly ROWS = 80;
 
     if (dx !== 0 || dy !== 0) {
       const mag = Math.hypot(dx, dy);
-      dx = (dx/mag) * this.BASE_STEP;
-      dy = (dy/mag) * this.BASE_STEP;
+      dx = (dx / mag) * this.BASE_STEP;
+      dy = (dy / mag) * this.BASE_STEP;
     }
 
     this.handleArrowPress(dx, dy);
@@ -250,79 +283,91 @@ private readonly ROWS = 80;
   /**
    * actualizeaza pozitia jucatorului, limitand miscarea la suprafata hartii (in functie de dimensiunea imaginii si offset).
    */
-/**
- * Încearcă să mute jucătorul cu xChange, yChange
- * respectând:
- *  - marginile hărții (mapOffsetX/Y + mapImageWidth/Height)
- *  - zonele de coliziune din this.boundaries
- */
-handleArrowPress(xChange: number, yChange: number) {
-  const currentPlayer = this.players[this.playerId];
-  if (!currentPlayer) return;
+  /**
+   * Încearcă să mute jucătorul cu xChange, yChange
+   * respectând:
+   *  - marginile hărții (mapOffsetX/Y + mapImageWidth/Height)
+   *  - zonele de coliziune din this.boundaries
+   */
+  handleArrowPress(xChange: number, yChange: number) {
+    const currentPlayer = this.players[this.playerId];
+    if (!currentPlayer) return;
 
-  // —— 1) calculează mapOffset din camera worldOffset/zoom
-  //     (hartă = coordonate interne la world)
-  const mapOffsetX = -this.worldOffsetX / this.zoom;
-  const mapOffsetY = -this.worldOffsetY / this.zoom;
+    // —— 1) calculează mapOffset din camera worldOffset/zoom
+    //     (hartă = coordonate interne la world)
+    const mapOffsetX = -this.worldOffsetX / this.zoom;
+    const mapOffsetY = -this.worldOffsetY / this.zoom;
 
-  // —— 2) limitează încercarea de mişcare la marginile hărţii
-  const minX = mapOffsetX;
-  const minY = mapOffsetY;
-  const maxX = mapOffsetX + this.mapImageWidth  - this.TILE_SIZE;
-  const maxY = mapOffsetY + this.mapImageHeight - this.TILE_SIZE;
+    // —— 2) limitează încercarea de mişcare la marginile hărţii
+    const minX = mapOffsetX;
+    const minY = mapOffsetY;
+    const maxX = mapOffsetX + this.mapImageWidth - this.TILE_SIZE;
+    const maxY = mapOffsetY + this.mapImageHeight - this.TILE_SIZE;
 
-  let attemptX = currentPlayer.x + xChange;
-  let attemptY = currentPlayer.y + yChange;
+    let attemptX = currentPlayer.x + xChange;
+    let attemptY = currentPlayer.y + yChange;
 
-  attemptX = Math.max(minX, Math.min(maxX, attemptX));
-  attemptY = Math.max(minY, Math.min(maxY, attemptY));
+    attemptX = Math.max(minX, Math.min(maxX, attemptX));
+    attemptY = Math.max(minY, Math.min(maxY, attemptY));
 
-  // —— 3) collision‑detection pas‑cu‑pas
-  let finalX = currentPlayer.x;
-  if (!this.checkCollision(
-        attemptX,
-        currentPlayer.y,
-        this.TILE_SIZE,
-        this.TILE_SIZE
-      )) {
-    finalX = attemptX;
+    // —— 3) collision‑detection pas‑cu‑pas
+    let finalX = currentPlayer.x;
+    if (!this.checkCollision(
+      attemptX,
+      currentPlayer.y,
+      this.TILE_SIZE,
+      this.TILE_SIZE
+    )) {
+      finalX = attemptX;
+    }
+
+    let finalY = currentPlayer.y;
+    if (!this.checkCollision(
+      finalX,
+      attemptY,
+      this.TILE_SIZE,
+      this.TILE_SIZE
+    )) {
+      finalY = attemptY;
+    }
+
+    if (this.checkInformationModal(
+      finalX,
+      attemptY,
+      this.TILE_SIZE,
+      this.TILE_SIZE
+    )) {
+      this.isInformationModalOpened = true;
+    }
+    else {
+      this.isInformationModalOpened = false;
+    }
+
+    // —— 4) actualizează direcţia (bazată pe xChange/yChange originale)
+    if (xChange > 0 && yChange < 0) currentPlayer.direction = 'up-right';
+    else if (xChange > 0 && yChange > 0) currentPlayer.direction = 'down-right';
+    else if (xChange < 0 && yChange < 0) currentPlayer.direction = 'up-left';
+    else if (xChange < 0 && yChange > 0) currentPlayer.direction = 'down-left';
+    else if (xChange > 0) currentPlayer.direction = 'right';
+    else if (xChange < 0) currentPlayer.direction = 'left';
+    else if (yChange > 0) currentPlayer.direction = 'down';
+    else if (yChange < 0) currentPlayer.direction = 'up';
+
+    // —— 5) dacă s‑a mutat pe vreo axă, aplică mutarea
+    if (finalX !== currentPlayer.x || finalY !== currentPlayer.y) {
+      currentPlayer.x = finalX;
+      currentPlayer.y = finalY;
+
+      this.centerCameraOn(finalX, finalY);
+      this.movement$.next(currentPlayer);
+      this.attemptGrabCoin(finalX, finalY);
+
+      this.isWalking = true;
+    } else {
+      // blocat → oprim animația
+      this.isWalking = false;
+    }
   }
-
-  let finalY = currentPlayer.y;
-  if (!this.checkCollision(
-        finalX,
-        attemptY,
-        this.TILE_SIZE,
-        this.TILE_SIZE
-      )) {
-    finalY = attemptY;
-  }
-
-  // —— 4) actualizează direcţia (bazată pe xChange/yChange originale)
-  if (xChange > 0 && yChange < 0)      currentPlayer.direction = 'up-right';
-  else if (xChange > 0 && yChange > 0) currentPlayer.direction = 'down-right';
-  else if (xChange < 0 && yChange < 0) currentPlayer.direction = 'up-left';
-  else if (xChange < 0 && yChange > 0) currentPlayer.direction = 'down-left';
-  else if (xChange > 0)                currentPlayer.direction = 'right';
-  else if (xChange < 0)                currentPlayer.direction = 'left';
-  else if (yChange > 0)                currentPlayer.direction = 'down';
-  else if (yChange < 0)                currentPlayer.direction = 'up';
-
-  // —— 5) dacă s‑a mutat pe vreo axă, aplică mutarea
-  if (finalX !== currentPlayer.x || finalY !== currentPlayer.y) {
-    currentPlayer.x = finalX;
-    currentPlayer.y = finalY;
-
-    this.centerCameraOn(finalX, finalY);
-    this.movement$.next(currentPlayer);
-    this.attemptGrabCoin(finalX, finalY);
-
-    this.isWalking = true;
-  } else {
-    // blocat → oprim animația
-    this.isWalking = false;
-  }
-}
 
 
   // listeneri pentru actualizarile din Firebase
@@ -432,28 +477,37 @@ handleArrowPress(xChange: number, yChange: number) {
 
   private checkCollision(x: number, y: number, width: number, height: number): boolean {
     return this.boundaries.some(b =>
-      x <  b.x + b.width  &&
-      x + width  > b.x      &&
-      y <  b.y + b.height &&
+      x < b.x + b.width &&
+      x + width > b.x &&
+      y < b.y + b.height &&
       y + height > b.y
     );
   }
 
+  private checkInformationModal(x: number, y: number, width: number, height: number): boolean {
+    let coordinates: Boundary;
+    coordinates = this.informationPopUpCoordinates;
+    return x < coordinates.x + coordinates.width &&
+      x + width > coordinates.x &&
+      y < coordinates.y + coordinates.height &&
+      y + height > coordinates.y;
+  }
+
   private lerp(start: number, end: number, t: number) {
-  return start + (end - start) * t;
-}
+    return start + (end - start) * t;
+  }
 
-private updateCamera() {
-  const p = this.players[this.playerId];
-  if (!p) return;
+  private updateCamera() {
+    const p = this.players[this.playerId];
+    if (!p) return;
 
-  const targetX = this.viewportWidth/2 - (p.x + this.playerSpriteWidth/2) * this.zoom;
-  const targetY = this.viewportHeight/2 - (p.y + this.playerSpriteHeight/2) * this.zoom;
+    const targetX = this.viewportWidth / 2 - (p.x + this.playerSpriteWidth / 2) * this.zoom;
+    const targetY = this.viewportHeight / 2 - (p.y + this.playerSpriteHeight / 2) * this.zoom;
 
-  // t mic = mişcare mai „moale”
-  this.worldOffsetX = this.lerp(this.worldOffsetX, targetX, 0.1);
-  this.worldOffsetY = this.lerp(this.worldOffsetY, targetY, 0.1);
-  this.constrainWorld();
-}
+    // t mic = mişcare mai „moale”
+    this.worldOffsetX = this.lerp(this.worldOffsetX, targetX, 0.1);
+    this.worldOffsetY = this.lerp(this.worldOffsetY, targetY, 0.1);
+    this.constrainWorld();
+  }
 
 }

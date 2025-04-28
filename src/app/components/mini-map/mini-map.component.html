@@ -1,0 +1,8 @@
+<div class="overlay" (click)="onClose()">
+    <div class="modal" (click)="onModalClick($event)">
+        <img src="assets/images/farm.png" alt="Mini-harta" class="mini-map-img" />
+        <div class="player-marker" [style.left]="playerLeft" [style.top]="playerTop">
+        </div>
+        <button class="close-btn" (click)="onClose()">×</button>
+    </div>
+</div>

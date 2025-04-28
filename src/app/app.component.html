@@ -14,22 +14,24 @@
             </div>
         </ng-container>
 
-        <ng-container *ngFor="let c of coins | keyvalue">
+        <!-- <ng-container *ngFor="let c of coins | keyvalue">
             <div class="Coin" [ngStyle]="{ transform: getCoinTransform(c.value) }">
                 <div class="Coin_shadow"></div>
                 <div class="Coin_sprite"></div>
             </div>
-        </ng-container>
+        </ng-container> -->
 
         <!-- <img class="Map" src="assets/images/farm_foreground.png" draggable="false" /> -->
 
         <ng-container *ngFor="let b of boundaries">
             <div class="BoundaryDebug" [style.width.px]="b.width" [style.height.px]="b.height" [style.transform]="'translate3d(' + b.x + 'px,' + b.y + 'px,0)'"></div>
         </ng-container>
+
     </div>
 </div>
 
-
+<app-mini-map *ngIf="showMiniMap" [src]="'assets/images/farm.png'" [player]="players[playerId]" [mapWidth]="mapImageWidth" [mapHeight]="mapImageHeight" (close)="toggleMiniMap()"></app-mini-map>
+<app-info-modal *ngIf="isInformationModalOpened" (close)="toggleInfoModal()"></app-info-modal>
 
 <div class="player-info">
     <div>
