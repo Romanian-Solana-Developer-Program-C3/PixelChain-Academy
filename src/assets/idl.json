@@ -1,0 +1,259 @@
+{
+    "address": "9qqmWEk4SRZX23gsKDZgqdaBMRg52PPjvgna3rS6qsEk",
+    "metadata": {
+        "name": "pixel_chain_anchor",
+        "version": "0.1.0",
+        "spec": "0.1.0",
+        "description": "Created with Anchor"
+    },
+    "instructions": [{
+            "name": "admin_add_challenge",
+            "discriminator": [
+                226,
+                211,
+                123,
+                11,
+                170,
+                160,
+                249,
+                169
+            ],
+            "accounts": [{
+                    "name": "challenge",
+                    "writable": true
+                },
+                {
+                    "name": "authority",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": [{
+                    "name": "challenge_id",
+                    "type": "u8"
+                },
+                {
+                    "name": "uri",
+                    "type": "string"
+                }
+            ]
+        },
+        {
+            "name": "complete_challenge",
+            "discriminator": [
+                91,
+                147,
+                166,
+                187,
+                72,
+                3,
+                55,
+                209
+            ],
+            "accounts": [{
+                    "name": "player",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [{
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    121,
+                                    101,
+                                    114
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "authority"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "challenge"
+                },
+                {
+                    "name": "reward_mint",
+                    "writable": true
+                },
+                {
+                    "name": "authority",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "token_program",
+                    "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+                },
+                {
+                    "name": "metadata_program",
+                    "address": "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                },
+                {
+                    "name": "rent",
+                    "address": "SysvarRent111111111111111111111111111111111"
+                }
+            ],
+            "args": [{
+                "name": "challenge_id",
+                "type": "u8"
+            }]
+        },
+        {
+            "name": "init_player",
+            "discriminator": [
+                114,
+                27,
+                219,
+                144,
+                50,
+                15,
+                228,
+                66
+            ],
+            "accounts": [{
+                    "name": "player",
+                    "writable": true,
+                    "pda": {
+                        "seeds": [{
+                                "kind": "const",
+                                "value": [
+                                    112,
+                                    108,
+                                    97,
+                                    121,
+                                    101,
+                                    114
+                                ]
+                            },
+                            {
+                                "kind": "account",
+                                "path": "authority"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "authority",
+                    "writable": true,
+                    "signer": true
+                },
+                {
+                    "name": "system_program",
+                    "address": "11111111111111111111111111111111"
+                }
+            ],
+            "args": []
+        }
+    ],
+    "accounts": [{
+            "name": "Challenge",
+            "discriminator": [
+                119,
+                250,
+                161,
+                121,
+                119,
+                81,
+                22,
+                208
+            ]
+        },
+        {
+            "name": "Player",
+            "discriminator": [
+                205,
+                222,
+                112,
+                7,
+                165,
+                155,
+                206,
+                218
+            ]
+        }
+    ],
+    "events": [{
+        "name": "ChallengeCompleted",
+        "discriminator": [
+            83,
+            76,
+            152,
+            92,
+            81,
+            38,
+            181,
+            250
+        ]
+    }],
+    "errors": [{
+        "code": 6000,
+        "name": "AlreadyCompleted",
+        "msg": "Challenge already completed"
+    }],
+    "types": [{
+            "name": "Challenge",
+            "type": {
+                "kind": "struct",
+                "fields": [{
+                        "name": "id",
+                        "type": "u8"
+                    },
+                    {
+                        "name": "uri",
+                        "type": "string"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "ChallengeCompleted",
+            "type": {
+                "kind": "struct",
+                "fields": [{
+                        "name": "player",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "challenge_id",
+                        "type": "u8"
+                    },
+                    {
+                        "name": "mint",
+                        "type": "pubkey"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "Player",
+            "type": {
+                "kind": "struct",
+                "fields": [{
+                        "name": "authority",
+                        "type": "pubkey"
+                    },
+                    {
+                        "name": "xp",
+                        "type": "u32"
+                    },
+                    {
+                        "name": "completed_bitmap",
+                        "type": "bytes"
+                    }
+                ]
+            }
+        }
+    ]
+}

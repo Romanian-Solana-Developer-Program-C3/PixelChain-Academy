@@ -1,13 +1,13 @@
 import { AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
-import { signInAnonymously } from 'firebase/auth';
-import { ref, set, onValue, onDisconnect, update, remove } from '@angular/fire/database';
-import { Auth } from '@angular/fire/auth';
-import { Database } from '@angular/fire/database';
-import { Firestore } from '@angular/fire/firestore';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AngularFireDatabase } from '@angular/fire/compat/database';
-import { debounceTime, empty, Subject } from 'rxjs';
+import { debounceTime, empty, firstValueFrom, map, Subject, take } from 'rxjs';
 import { colissions } from '../assets/colissions';
+import { MatDialog } from '@angular/material/dialog';
+import { AuthService } from './services/auth.service';
+import { LoginComponent } from './components/login/login.component';
+import { AngularFirestore } from '@angular/fire/compat/firestore';
+
 
 export interface Player {
   id: string;
@@ -95,7 +95,11 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef;
 
-  constructor(private auth: AngularFireAuth,
+  constructor(
+    private dialog: MatDialog,
+    private authSvc: AuthService,
+    private afAuth: AngularFireAuth,
+    private afs: AngularFirestore,
     private db: AngularFireDatabase) {
     // calculăm offset-ul pentru centrare:
     const maxOffsetX = 0;
@@ -117,68 +121,66 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    // for (let i = 0; i < colissions.length; i += 140)
-    // // autentificare anonima cu Firebase
-    // console.log(colissions);
-    // transform vector în matrice de lățime 140 (latime mapa in tile-uri)
-
-    // genereaz doar celulele cu „15713” (culoare rosu)
-    for (let row = 0; row < this.ROWS; row++) {
-      for (let col = 0; col < this.COLS; col++) {
-        if (colissions[row * this.COLS + col] === 15713) {
-          this.boundaries.push({
-            x: col * this.TILE_SIZE,
-            y: row * this.TILE_SIZE,
-            width: this.TILE_SIZE,
-            height: this.TILE_SIZE
-          });
-        }
-        if (colissions[row * this.COLS + col] === Modals.Information) {
-          this.informationPopUpCoordinates = {
-            x: col * this.TILE_SIZE,
-            y: row * this.TILE_SIZE,
-            width: this.TILE_SIZE,
-            height: this.TILE_SIZE
-          };
-        }
+    this.afAuth.authState.subscribe(async user => {
+      if (!user) {
+        this.openLoginDialog();
+        return;
       }
-    }
 
-    this.auth.signInAnonymously().then(() => {
-      this.auth.authState.subscribe((user) => {
-        if (user) {
-          this.playerId = user.uid;
-          // alegem o pozitie sigura in interiorul hartii (in pixeli, folosind offset si limitele hartii)
-          const x = 320;
-          const y = 380;
-          this.centerCameraOn(x, y);
-          this.playerName = this.createName();
+      const snap = await firstValueFrom(
+        this.afs.doc(`players/${user.uid}`).get()
+      );
 
-          const initialPlayer: Player = {
-            id: this.playerId,
-            name: this.playerName,
-            direction: 'right',
-            color: this.getRandomColor(),
-            x,
-            y,
-            coins: 0,
-          };
+      const hasWallet = await this.afs
+        .doc(`players/${user.uid}`)
+        .valueChanges()
+        .pipe(
+          take(1),
+          map((d: any) => !!d?.wallet)
+        )
+        .toPromise();
 
-          // salvam datele initiale in Firebase
-          this.db.object(`players/${this.playerId}`).set(initialPlayer);
 
-          // stergem jucatorul la deconectare
-          this.db.object(`players/${this.playerId}`).query.ref.onDisconnect().remove();
+      if (!hasWallet) {
+        this.openLoginDialog();
+        return;
+      }
 
-          // pornim event listenerii pentru actualizari in timp real
-          this.initGameListeners();
-        }
-      });
+      this.startGame(user.uid);
     });
   }
 
+  private openLoginDialog() {
+    this.dialog.open(LoginComponent, {
+      disableClose: true,
+      width: '400px',
+    });
+  }
+
+  private async startGame(userUid: string) {
+    this.playerId = userUid;
+    const x = 320, y = 380;
+
+    this.centerCameraOn(x, y);
+    this.playerName = this.createName();
+
+    const initialPlayer: Player = {
+      id: this.playerId,
+      name: this.playerName,
+      direction: 'right',
+      color: this.getRandomColor(),
+      x,
+      y,
+      coins: 0,
+    };
+
+    await this.db.object(`players/${this.playerId}`).set(initialPlayer);
+    this.db.object(`players/${this.playerId}`).query.ref.onDisconnect().remove();
+    this.initGameListeners();
+  }
+
+
   ngAfterViewInit() {
-    // startăm animarea
     requestAnimationFrame(this.gameLoop.bind(this));
   }
 
