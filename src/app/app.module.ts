@@ -8,7 +8,7 @@ import { AngularFireAuthModule }      from '@angular/fire/compat/auth';
 import { AngularFireDatabaseModule }  from '@angular/fire/compat/database';
 import { AngularFirestoreModule } from '@angular/fire/compat/firestore';
 
-import { HdWalletAdapterModule } from '@heavy-duty/wallet-adapter';
+import { HdWalletAdapterModule, provideWalletAdapter } from '@heavy-duty/wallet-adapter';
 
 import { environment }                from '../environments/environment';
 import { AppRoutingModule }           from './app-routing.module';
@@ -18,9 +18,13 @@ import { InfoModalComponent } from './components/info-modal/info-modal.component
 import {MatDialogModule, MatDialogRef} from '@angular/material/dialog';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { LoginComponent } from './components/login/login.component';
+import { HdWalletAdapterMaterialModule } from '@heavy-duty/wallet-adapter-material';
+import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
+import { ChestModalComponent } from './components/chest-modal/chest-modal.component';
+import { getFunctions, provideFunctions } from '@angular/fire/functions';
 
 @NgModule({
-  declarations: [AppComponent, MiniMapComponent, InfoModalComponent, LoginComponent],
+  declarations: [AppComponent, MiniMapComponent, InfoModalComponent, LoginComponent, ChestModalComponent],
   imports: [
     BrowserModule,
     FormsModule,
@@ -30,6 +34,7 @@ import { LoginComponent } from './components/login/login.component';
     HdWalletAdapterModule.forRoot({
       autoConnect: true,
     }),
+    HdWalletAdapterMaterialModule,
     // bootstrap compat
     AngularFireModule.initializeApp(environment.firebase),
     AngularFireAuthModule,
@@ -39,6 +44,9 @@ import { LoginComponent } from './components/login/login.component';
   ],
   schemas: [
     CUSTOM_ELEMENTS_SCHEMA
+  ],
+  providers: [
+    provideWalletAdapter({ autoConnect: true }),
   ],
   bootstrap: [AppComponent]
 })

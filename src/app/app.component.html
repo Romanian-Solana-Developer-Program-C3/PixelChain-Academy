@@ -32,6 +32,7 @@
 
 <app-mini-map *ngIf="showMiniMap" [src]="'assets/images/farm.png'" [player]="players[playerId]" [mapWidth]="mapImageWidth" [mapHeight]="mapImageHeight" (close)="toggleMiniMap()"></app-mini-map>
 <app-info-modal *ngIf="isInformationModalOpened" (close)="toggleInfoModal()"></app-info-modal>
+<app-chest-modal *ngIf="isChestModalOpened" (close)="toggleChestModal()"></app-chest-modal>
 
 <div class="player-info">
     <div>

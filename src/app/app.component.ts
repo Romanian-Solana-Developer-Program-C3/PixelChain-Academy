@@ -32,7 +32,8 @@ export interface Boundary {
 }
 
 enum Modals {
-  Information = 1001
+  Information = 1001,
+  Chest = 1002
 }
 
 @Component({
@@ -91,6 +92,13 @@ export class AppComponent implements OnInit, AfterViewInit {
     height: 0
   };
   isInformationModalOpened = false;
+  chestPopUpCoordinates: Boundary = {
+    x: 1,
+    y: 1,
+    width: 1,
+    height: 1
+  };
+  isChestModalOpened = false;
   colissionsMap: [] = [];
 
   @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef;
@@ -158,6 +166,44 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   private async startGame(userUid: string) {
+
+    for (let row = 0; row < this.ROWS; row++) {
+      for (let col = 0; col < this.COLS; col++) {
+        const cell = colissions[row * this.COLS + col];
+    
+        // tile = 15713  → obstacol (roşu pe harta Tiled)
+        if (cell === 15713) {
+          this.boundaries.push({
+            x: col * this.TILE_SIZE,
+            y: row * this.TILE_SIZE,
+            width:  this.TILE_SIZE,
+            height: this.TILE_SIZE,
+          });
+        }
+    
+        // tile = 1001  → pătratul care deschide modalul de informaţii
+        if (cell === 1001 /* Modals.Information */) {
+          this.informationPopUpCoordinates = {
+            x: col * this.TILE_SIZE,
+            y: row * this.TILE_SIZE,
+            width:  this.TILE_SIZE,
+            height: this.TILE_SIZE,
+          };
+        }
+
+        // tile = 1002  → pătratul care deschide modalul pentru chest
+        if (cell === 1002 /* Modals.Chest */) {
+          this.chestPopUpCoordinates = {
+            x: col * this.TILE_SIZE,
+            y: row * this.TILE_SIZE,
+            width:  this.TILE_SIZE,
+            height: this.TILE_SIZE,
+          };
+          console.log(this.chestPopUpCoordinates);
+        }
+      }
+    }
+
     this.playerId = userUid;
     const x = 320, y = 380;
 
@@ -228,6 +274,10 @@ export class AppComponent implements OnInit, AfterViewInit {
 
   toggleInfoModal(): void {
     this.isInformationModalOpened = !this.isInformationModalOpened;
+  }
+
+  toggleChestModal(): void {
+    this.isChestModalOpened = !this.isChestModalOpened;
   }
 
   private processMovement(): void {
@@ -343,6 +393,18 @@ export class AppComponent implements OnInit, AfterViewInit {
     }
     else {
       this.isInformationModalOpened = false;
+    }
+
+    if (this.checkChestModal(
+      finalX,
+      attemptY,
+      this.TILE_SIZE,
+      this.TILE_SIZE
+    )) {
+      this.isChestModalOpened = true;
+    }
+    else {
+      this.isChestModalOpened = false;
     }
 
     // —— 4) actualizează direcţia (bazată pe xChange/yChange originale)
@@ -489,6 +551,15 @@ export class AppComponent implements OnInit, AfterViewInit {
   private checkInformationModal(x: number, y: number, width: number, height: number): boolean {
     let coordinates: Boundary;
     coordinates = this.informationPopUpCoordinates;
+    return x < coordinates.x + coordinates.width &&
+      x + width > coordinates.x &&
+      y < coordinates.y + coordinates.height &&
+      y + height > coordinates.y;
+  }
+
+  private checkChestModal(x: number, y: number, width: number, height: number): boolean {
+    let coordinates: Boundary;
+    coordinates = this.chestPopUpCoordinates;
     return x < coordinates.x + coordinates.width &&
       x + width > coordinates.x &&
       y < coordinates.y + coordinates.height &&
