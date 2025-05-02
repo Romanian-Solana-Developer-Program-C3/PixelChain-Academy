@@ -45,16 +45,13 @@ export class ChestModalComponent implements OnDestroy {
 
   async claim() {
     if (!this.canClaim) return;
-
     try {
-      const fn = httpsCallable(getFunctions(), 'claimTreasure');
-      fn({}).then(res => {
-        console.log('Airdrop tx:', res.data);
-        alert(`1 SOL sent on devnet!\nTx: ${res.data as string}`);
-        this.onClose();
-      });
+      const claimTreasure = httpsCallable(getFunctions(), 'claimTreasure');
+      const res = await claimTreasure({});
+      alert(`1 SOL sent!\nTx: ${res.data as string}`);
+      this.onClose();
     } catch (err: any) {
-      alert('Error: ' + err.message);
+      alert('Error: ' + (err.message ?? err));
     }
   }
 
