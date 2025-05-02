@@ -1,0 +1,27 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -- COLECTIA players --
+    // doar utilizatorii autentificaţi pot citi, 
+    // şi fiecare îşi poate scrie doar propriul document /players/{uid}
+    match /players/{userId} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null 
+                   && request.auth.uid == userId;
+    }
+
+    // -- COLECTIA coins --
+    // orice utilizator autentificat poate citi şi scrie în /coins/*
+    match /coins/{coinId} {
+      allow read, write: if request.auth != null;
+    }
+
+    // -- ORICE ALT DOCUMENT --
+    // implicit: doar citire de către utilizatori autentificaţi, niciun write
+    match /{document=**} {
+      allow read:  if request.auth != null;
+      allow write: if false;
+    }
+  }
+}
