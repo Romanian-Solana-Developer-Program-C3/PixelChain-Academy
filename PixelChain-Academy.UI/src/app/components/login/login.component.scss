@@ -1,0 +1,49 @@
+.dialog-title {
+    margin-bottom: 4px;
+}
+
+.dialog-content {
+    width: 25vw;
+}
+
+.subtitle {
+    margin: 0 0 16px 0;
+    color: rgba(0, 0, 0, 0.7);
+}
+
+.modal {
+    width: 27vw;
+    max-height: 61vh;
+    position: relative;
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    transform: scale(1);
+}
+
+.action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 16px;
+}
+
+.guest-btn {
+    flex: 1 1 45%;
+}
+
+.wallet-group {
+    flex: 1 1 55%;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.wallet-btn {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.save-wallet-btn {
+    white-space: nowrap;
+}

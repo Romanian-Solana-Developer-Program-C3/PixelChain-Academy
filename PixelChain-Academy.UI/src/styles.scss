@@ -157,16 +157,16 @@
         width: 150px;
         text-transform: uppercase;
         &:focus {
-            border-color: #f000ff;
+            border-color: #7a5a3a;
         }
     }
     
     button {
         padding-left: 0.5em;
         padding-right: 0.5em;
-        background: #59ff5a;
+        background: #c98755;
         border: 0;
-        border-bottom: 2px solid #1e830b;
+        border-bottom: 2px solid #7a5a3a;
         cursor: pointer;
         &:active {
             position: relative;
@@ -239,5 +239,12 @@
     //     pointer-events: none;
     //     z-index: 10;
     // }
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+    html,
+    body {
+        height: 100%;
+    }
+    
+    body {
+        margin: 0;
+        font-family: Roboto, "Helvetica Neue", sans-serif;
+    }

@@ -24,6 +24,7 @@ export class LoginComponent {
     this.pending = true;
     await this.auth.signInAnon();
     this.pending = false;
+    this.dialogRef.close();
   }
 
   async link() {

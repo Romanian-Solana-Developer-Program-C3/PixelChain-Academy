@@ -1,6 +1,6 @@
 import { CUSTOM_ELEMENTS_SCHEMA, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 import { AngularFireModule } from '@angular/fire/compat';
 import { AngularFireAuthModule } from '@angular/fire/compat/auth';
@@ -21,9 +21,10 @@ import { HdWalletAdapterMaterialModule } from '@heavy-duty/wallet-adapter-materi
 import { WalletAdapterNetwork } from '@solana/wallet-adapter-base';
 import { ChestModalComponent } from './components/chest-modal/chest-modal.component';
 import { getFunctions, provideFunctions } from '@angular/fire/functions';
+import { AdminChallengeComponent } from './components/admin-challenge/admin-challenge.component';
 
 @NgModule({
-  declarations: [AppComponent, MiniMapComponent, InfoModalComponent, LoginComponent, ChestModalComponent],
+  declarations: [AppComponent, MiniMapComponent, InfoModalComponent, LoginComponent, ChestModalComponent, AdminChallengeComponent],
   imports: [
     BrowserModule,
     FormsModule,
@@ -44,6 +45,7 @@ import { getFunctions, provideFunctions } from '@angular/fire/functions';
       const fns = getFunctions();
       return fns;
     }),
+    ReactiveFormsModule
   ],
   schemas: [
     CUSTOM_ELEMENTS_SCHEMA

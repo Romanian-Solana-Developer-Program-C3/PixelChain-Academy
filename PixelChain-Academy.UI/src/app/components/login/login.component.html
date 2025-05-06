@@ -1,15 +1,25 @@
-<h1 mat-dialog-title>Welcome to Pixel-Chain</h1>
+<div class="modal">
+    <h1 mat-dialog-title class="dialog-title">
+        Welcome to Pixel-Chain
+    </h1>
 
-<div>
-    <p>Autentifică-te și conectează-ți portofelul.</p>
+    <mat-dialog-content class="dialog-content">
+        <p class="subtitle">
+            Autentifică-te și conectează-ți portofelul.
+        </p>
 
-    <button mat-raised-button color="primary" (click)="login()">
-        Continue as guest
-    </button>
+        <div class="action-row">
+            <button mat-raised-button color="primary" class="guest-btn" (click)="login()">
+                Continue as guest
+            </button>
 
-    <hd-wallet-multi-button class="my-4"></hd-wallet-multi-button>
+            <div class="wallet-group">
+                <hd-wallet-multi-button class="wallet-btn"></hd-wallet-multi-button>
 
-    <button mat-stroked-button color="accent" (click)="link()" [disabled]="!walletReady || pending">
-        Save Wallet
-    </button>
+                <button mat-stroked-button color="primary" class="save-wallet-btn" (click)="link()" [disabled]="!walletReady || pending">
+                    Save&nbsp;Wallet
+                </button>
+            </div>
+        </div>
+    </mat-dialog-content>
 </div>

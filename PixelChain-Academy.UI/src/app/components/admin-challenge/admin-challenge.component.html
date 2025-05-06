@@ -1,0 +1,33 @@
+<div class="overlay" (click)="onClose()">
+    <div class="modal" (click)="onModalClick($event)">
+
+        <form [formGroup]="form" (ngSubmit)="onSubmit()">
+            <label>
+                Challenge ID:
+                <input type="number" formControlName="challengeId" />
+            </label>
+            <div *ngIf="form.controls.challengeId.invalid && form.touched" class="error">
+                Trebuie un ID între 0 și 255.
+            </div>
+
+            <label>
+                URI metadate:
+                <input type="text" formControlName="uri" />
+            </label>
+            <div *ngIf="form.controls.uri.invalid && form.touched" class="error">
+                URI este obligatoriu.
+            </div>
+        </form>
+
+        <div *ngIf="message" class="message">{{ message }}</div>
+
+        <div class="modal-footer">
+            <button type="submit" [disabled]="loading || form.invalid" (click)="onSubmit()">
+                {{ loading ? 'Se procesează…' : 'Adaugă Challenge' }}
+            </button>
+
+            <button mat-stroked-button mat-dialog-close (click)="onClose()">Close</button>
+        </div>
+
+    </div>
+</div>

@@ -2,6 +2,8 @@ import { Component, EventEmitter, Output, OnDestroy } from '@angular/core';
 import { MatDialogRef } from '@angular/material/dialog';
 import { timer, Subscription } from 'rxjs';
 import { httpsCallable, getFunctions } from '@angular/fire/functions';
+import { AnchorService } from 'src/app/services/anchor.service';
+import { PublicKey } from '@solana/web3.js';
 
 @Component({
   selector: 'app-chest-modal',
@@ -27,7 +29,7 @@ export class ChestModalComponent implements OnDestroy {
 
   private countdownSub?: Subscription;
 
-  constructor(
+  constructor(private anchorService: AnchorService
   ) {
     // la deschiderea dialogului pornește un timer 1 s
     this.countdownSub = timer(0, 1000).subscribe(tick => {
@@ -45,15 +47,19 @@ export class ChestModalComponent implements OnDestroy {
 
   async claim() {
     if (!this.canClaim) return;
+  
     try {
-      const claimTreasure = httpsCallable(getFunctions(), 'claimTreasure');
-      const res = await claimTreasure({});
-      alert(`1 SOL sent!\nTx: ${res.data as string}`);
+      await this.anchorService.initPlayer();
+      // challenge id, hardcodat deocamdata
+      const sig = await this.anchorService.completeChallenge(10);
+      alert(`🎉 Claimed! Tx: ${sig}`);
       this.onClose();
     } catch (err: any) {
-      alert('Error: ' + (err.message ?? err));
+      console.error(err);
+      alert('Error: ' + (err.message ?? err.toString()));
     }
   }
+  
 
   ngOnDestroy() {
     this.countdownSub?.unsubscribe();

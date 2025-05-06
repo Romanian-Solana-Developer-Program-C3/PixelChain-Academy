@@ -1,12 +1,13 @@
 import { AfterViewInit, Component, ElementRef, HostListener, OnInit, ViewChild } from '@angular/core';
 import { AngularFireAuth } from '@angular/fire/compat/auth';
 import { AngularFireDatabase } from '@angular/fire/compat/database';
-import { debounceTime, empty, firstValueFrom, map, Subject, take } from 'rxjs';
+import { debounceTime, empty, filter, firstValueFrom, map, of, Subject, switchMap, take } from 'rxjs';
 import { colissions } from '../assets/colissions';
 import { MatDialog } from '@angular/material/dialog';
 import { AuthService } from './services/auth.service';
 import { LoginComponent } from './components/login/login.component';
 import { AngularFirestore } from '@angular/fire/compat/firestore';
+import { AdminChallengeComponent } from './components/admin-challenge/admin-challenge.component';
 
 
 export interface Player {
@@ -99,6 +100,7 @@ export class AppComponent implements OnInit, AfterViewInit {
     height: 1
   };
   isChestModalOpened = false;
+  isAdminModalOpened = false;
   colissionsMap: [] = [];
 
   @ViewChild('gameContainer', { static: true }) gameContainer!: ElementRef;
@@ -129,39 +131,40 @@ export class AppComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit(): void {
-    this.afAuth.authState.subscribe(async user => {
-      if (!user) {
-        this.openLoginDialog();
-        return;
-      }
+    this.afAuth.authState.pipe(
+      take(1),
+      switchMap(user => {
+        if (!user) {
+          this.openLoginDialog();
+          return this.afAuth.authState.pipe(
+            filter(u => !!u),
+            take(1)
+          );
+        }
 
-      const snap = await firstValueFrom(
-        this.afs.doc(`players/${user.uid}`).get()
-      );
+        return of(user);
+      })
+    )
+      .subscribe(async user => {
+        if (user != null) {
+          const doc: any = await this.afs.doc(`players/${user.uid}`)
+          .valueChanges()
+          .pipe(take(1))
+          .toPromise();
+        const hasWallet = !!doc?.wallet;
 
-      const hasWallet = await this.afs
-        .doc(`players/${user.uid}`)
-        .valueChanges()
-        .pipe(
-          take(1),
-          map((d: any) => !!d?.wallet)
-        )
-        .toPromise();
+        if (user.isAnonymous && !hasWallet) {
+          this.openLoginDialog();
+        }
 
-
-      if (!hasWallet) {
-        this.openLoginDialog();
-        return;
-      }
-
-      this.startGame(user.uid);
-    });
+        this.startGame(user.uid);
+        }
+      });
   }
 
   private openLoginDialog() {
     this.dialog.open(LoginComponent, {
-      disableClose: true,
-      width: '400px',
+      disableClose: true
     });
   }
 
@@ -170,23 +173,23 @@ export class AppComponent implements OnInit, AfterViewInit {
     for (let row = 0; row < this.ROWS; row++) {
       for (let col = 0; col < this.COLS; col++) {
         const cell = colissions[row * this.COLS + col];
-    
+
         // tile = 15713  → obstacol (roşu pe harta Tiled)
         if (cell === 15713) {
           this.boundaries.push({
             x: col * this.TILE_SIZE,
             y: row * this.TILE_SIZE,
-            width:  this.TILE_SIZE,
+            width: this.TILE_SIZE,
             height: this.TILE_SIZE,
           });
         }
-    
+
         // tile = 1001  → pătratul care deschide modalul de informaţii
         if (cell === 1001 /* Modals.Information */) {
           this.informationPopUpCoordinates = {
             x: col * this.TILE_SIZE,
             y: row * this.TILE_SIZE,
-            width:  this.TILE_SIZE,
+            width: this.TILE_SIZE,
             height: this.TILE_SIZE,
           };
         }
@@ -196,7 +199,7 @@ export class AppComponent implements OnInit, AfterViewInit {
           this.chestPopUpCoordinates = {
             x: col * this.TILE_SIZE,
             y: row * this.TILE_SIZE,
-            width:  this.TILE_SIZE,
+            width: this.TILE_SIZE,
             height: this.TILE_SIZE,
           };
           console.log(this.chestPopUpCoordinates);
@@ -280,6 +283,10 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.isChestModalOpened = !this.isChestModalOpened;
   }
 
+  toggleAdminModal(): void {
+    this.isAdminModalOpened = !this.isAdminModalOpened;
+  }
+
   private processMovement(): void {
     let dx = 0;
     let dy = 0;
@@ -320,37 +327,13 @@ export class AppComponent implements OnInit, AfterViewInit {
       name: this.playerName,
     });
   }
-
-  // schimba culoarea jucatorului
-  // changeColor() {
-  //   const currentPlayer = this.players[this.playerId];
-  //   if (!currentPlayer) return;
-  //   const currentIndex = this.playerColors.indexOf(currentPlayer.color);
-  //   const nextColor = this.playerColors[(currentIndex + 1) % this.playerColors.length];
-  //   this.db.object(`players/${this.playerId}`).update({
-  //     color: nextColor,
-  //   });
-  // }
-
-  /**
-   * actualizeaza pozitia jucatorului, limitand miscarea la suprafata hartii (in functie de dimensiunea imaginii si offset).
-   */
-  /**
-   * Încearcă să mute jucătorul cu xChange, yChange
-   * respectând:
-   *  - marginile hărții (mapOffsetX/Y + mapImageWidth/Height)
-   *  - zonele de coliziune din this.boundaries
-   */
   handleArrowPress(xChange: number, yChange: number) {
     const currentPlayer = this.players[this.playerId];
     if (!currentPlayer) return;
 
-    // —— 1) calculează mapOffset din camera worldOffset/zoom
-    //     (hartă = coordonate interne la world)
     const mapOffsetX = -this.worldOffsetX / this.zoom;
     const mapOffsetY = -this.worldOffsetY / this.zoom;
 
-    // —— 2) limitează încercarea de mişcare la marginile hărţii
     const minX = mapOffsetX;
     const minY = mapOffsetY;
     const maxX = mapOffsetX + this.mapImageWidth - this.TILE_SIZE;
@@ -362,7 +345,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     attemptX = Math.max(minX, Math.min(maxX, attemptX));
     attemptY = Math.max(minY, Math.min(maxY, attemptY));
 
-    // —— 3) collision‑detection pas‑cu‑pas
     let finalX = currentPlayer.x;
     if (!this.checkCollision(
       attemptX,
@@ -407,7 +389,6 @@ export class AppComponent implements OnInit, AfterViewInit {
       this.isChestModalOpened = false;
     }
 
-    // —— 4) actualizează direcţia (bazată pe xChange/yChange originale)
     if (xChange > 0 && yChange < 0) currentPlayer.direction = 'up-right';
     else if (xChange > 0 && yChange > 0) currentPlayer.direction = 'down-right';
     else if (xChange < 0 && yChange < 0) currentPlayer.direction = 'up-left';
@@ -417,7 +398,6 @@ export class AppComponent implements OnInit, AfterViewInit {
     else if (yChange > 0) currentPlayer.direction = 'down';
     else if (yChange < 0) currentPlayer.direction = 'up';
 
-    // —— 5) dacă s‑a mutat pe vreo axă, aplică mutarea
     if (finalX !== currentPlayer.x || finalY !== currentPlayer.y) {
       currentPlayer.x = finalX;
       currentPlayer.y = finalY;
@@ -581,6 +561,11 @@ export class AppComponent implements OnInit, AfterViewInit {
     this.worldOffsetX = this.lerp(this.worldOffsetX, targetX, 0.1);
     this.worldOffsetY = this.lerp(this.worldOffsetY, targetY, 0.1);
     this.constrainWorld();
+  }
+
+  public openAdminModal() {
+    this.dialog.open(AdminChallengeComponent, {
+    });
   }
 
 }
